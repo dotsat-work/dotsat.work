@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	"github.com/AlexTLDR/WebDev/context"
+	"github.com/AlexTLDR/WebDev/errors"
 	"github.com/AlexTLDR/WebDev/models"
 )
 
@@ -33,12 +34,18 @@ func (u Users) New(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
-	email := r.FormValue("email")
-	password := r.FormValue("password")
-	user, err := u.UserService.Create(email, password)
+	var data struct {
+		Email    string
+		Password string
+	}
+	data.Email = r.FormValue("email")
+	data.Password = r.FormValue("password")
+	user, err := u.UserService.Create(data.Email, data.Password)
 	if err != nil {
-		log.Println(err)
-		http.Error(w, "Something went wrong. Please try again later.", http.StatusInternalServerError)
+		if errors.Is(err, models.ErrEmailTaken) {
+			err = errors.Public(err, "Email is already taken!")
+		}
+		u.Templates.New.Execute(w, r, data, err)
 		return
 	}
 	session, err := u.SessionService.Create(user.ID)
