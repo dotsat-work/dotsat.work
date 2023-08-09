@@ -90,7 +90,7 @@ func main() {
 		SessionService: sessionService,
 	}
 
-	csrfMw := csrf.Protect([]byte(cfg.CSRF.Key), csrf.Secure(cfg.CSRF.Secure))
+	csrfMw := csrf.Protect([]byte(cfg.CSRF.Key), csrf.Secure(cfg.CSRF.Secure), csrf.Path("/"))
 
 	// Contollers
 
