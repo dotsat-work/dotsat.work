@@ -11,20 +11,21 @@ import (
 
 func main() {
 	cfg := config.Load()
-
-	app, err := app.New(cfg)
+	// Since I was initially using app, I got name shadowing linter warnings.
+	// Using a instead.
+	a, err := app.New(cfg)
 	if err != nil {
 		slog.Error("failed to initialize app", "error", err)
 		panic(err)
 	}
 	defer func() {
-		closeErr := app.Close()
+		closeErr := a.Close()
 		if closeErr != nil {
 			slog.Error("failed to close app", "error", closeErr)
 		}
 	}()
 
-	handler := routes.SetupRoutes(app)
+	handler := routes.SetupRoutes(a)
 	slog.Info("Server starting", "port", cfg.Port, "env", cfg.AppEnv, "url", "http://localhost:"+cfg.Port)
 
 	err = http.ListenAndServe(":"+cfg.Port, handler)
