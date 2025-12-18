@@ -1,0 +1,173 @@
+version: '3'
+
+vars:
+  BINARY_NAME: server
+  MAIN_PATH: ./cmd/server
+  BUILD_DIR: .
+
+tasks:
+  # =============================================================================
+  # Development
+  # =============================================================================
+  
+  dev:
+    desc: Run the server (will add hot reload with Air later)
+    cmds:
+      - go run {{.MAIN_PATH}}/main.go
+
+  watch:
+    desc: Run with hot reload using Air (install with 'go install github.com/air-verse/air@latest')
+    cmds:
+      - air
+    # Note: Requires .air.toml config file (run 'task air:init' to create)
+
+  # =============================================================================
+  # Build
+  # =============================================================================
+  
+  build:
+    desc: Build the server binary
+    cmds:
+      - go build -o {{.BUILD_DIR}}/{{.BINARY_NAME}} {{.MAIN_PATH}}
+    sources:
+      - "**/*.go"
+    generates:
+      - "{{.BUILD_DIR}}/{{.BINARY_NAME}}"
+
+  build:prod:
+    desc: Build optimized binary for production
+    cmds:
+      - go build -ldflags="-s -w" -o {{.BUILD_DIR}}/{{.BINARY_NAME}} {{.MAIN_PATH}}
+
+  # =============================================================================
+  # Database
+  # =============================================================================
+  
+  db:up:
+    desc: Start PostgreSQL with Docker
+    cmds:
+      - docker compose up -d postgres
+
+  db:down:
+    desc: Stop PostgreSQL
+    cmds:
+      - docker compose down
+
+  db:logs:
+    desc: View PostgreSQL logs
+    cmds:
+      - docker compose logs -f postgres
+
+  db:psql:
+    desc: Connect to PostgreSQL with psql
+    cmds:
+      - docker compose exec postgres psql -U postgres -d dotsat
+
+  # Migration tasks (will add when we implement migrations)
+  # db:migrate:
+  #   desc: Run database migrations
+  #   cmds:
+  #     - go run {{.MAIN_PATH}} migrate up
+  
+  # db:migrate:down:
+  #   desc: Rollback last migration
+  #   cmds:
+  #     - go run {{.MAIN_PATH}} migrate down
+
+  # =============================================================================
+  # Testing
+  # =============================================================================
+  
+  test:
+    desc: Run all tests
+    cmds:
+      - go test -v ./...
+
+  test:coverage:
+    desc: Run tests with coverage report
+    cmds:
+      - go test -v -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o coverage.html
+      - echo "Coverage report generated at coverage.html"
+
+  test:integration:
+    desc: Run integration tests only
+    cmds:
+      - go test -v -tags=integration ./...
+
+  # =============================================================================
+  # Code Quality
+  # =============================================================================
+  
+  fmt:
+    desc: Format Go code
+    cmds:
+      - go fmt ./...
+
+  lint:
+    desc: Run linter (requires golangci-lint)
+    cmds:
+      - golangci-lint run
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  tidy:
+    desc: Tidy go.mod
+    cmds:
+      - go mod tidy
+
+  # =============================================================================
+  # Utilities
+  # =============================================================================
+  
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -f {{.BINARY_NAME}}
+      - rm -f coverage.out coverage.html
+      - go clean
+
+  deps:
+    desc: Download dependencies
+    cmds:
+      - go mod download
+
+  install:tools:
+    desc: Install development tools
+    cmds:
+      - go install github.com/air-verse/air@latest
+      - go install github.com/pressly/goose/v3/cmd/goose@latest
+      - echo "Tools installed! Make sure $(go env GOPATH)/bin is in your PATH"
+
+  air:init:
+    desc: Initialize Air config for hot reload
+    cmds:
+      - air init
+      - echo "Air config created! Edit .air.toml if needed, then run 'task watch'"
+
+  # =============================================================================
+  # Docker
+  # =============================================================================
+  
+  docker:build:
+    desc: Build Docker image
+    cmds:
+      - docker build -t dotsat.work:latest .
+
+  docker:run:
+    desc: Run Docker container
+    cmds:
+      - docker run -p 8090:8090 --env-file .env dotsat.work:latest
+
+  # =============================================================================
+  # Help
+  # =============================================================================
+  
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
