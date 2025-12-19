@@ -27,11 +27,12 @@ func New(cfg *config.Config) (*App, error) {
 		return nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
 
-	// TODO: Run database migrations
-	// err = db.RunMigrations(database.DB, cfg.DBDriver)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to run migrations: %w", err)
-	// }
+	// Run database migrations
+	err = db.RunMigrations(database.DB)
+	if err != nil {
+		database.Close() // Close DB on migration failure
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	}
 
 	// TODO: Initialize repositories
 	// tenantRepository := repository.NewTenantRepository(database)
