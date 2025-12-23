@@ -3,6 +3,7 @@ package config
 import (
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -17,6 +18,10 @@ type Config struct {
 	// Database
 	DBDriver     string
 	DBConnection string
+
+	// Authentication
+	JWTSecret string
+	JWTExpiry time.Duration
 }
 
 func Load() *Config {
@@ -36,9 +41,12 @@ func Load() *Config {
 		// Database
 		DBDriver:     envString("DB_DRIVER", "postgres"),
 		DBConnection: envRequired("DB_CONNECTION"),
+
+		// Authentication
+		JWTSecret: envRequired("JWT_SECRET"),
+		JWTExpiry: envDuration("JWT_EXPIRY", 168*time.Hour), // 7-day default
 	}
 
-	// TODO: Validate if prod or dev
 	return cfg
 }
 
@@ -57,4 +65,25 @@ func envRequired(key string) string {
 	slog.Error("config required env var missing", "key", key)
 	os.Exit(1)
 	return ""
+}
+
+func envDuration(key string, def time.Duration) time.Duration {
+	v, ok := os.LookupEnv(key)
+	if !ok || v == "" {
+		return def
+	}
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		slog.Warn("config invalid duration, using default", "key", key, "value", v, "default", def)
+		return def
+	}
+	return d
+}
+
+func (c *Config) IsDevelopment() bool {
+	return c.AppEnv == "development"
+}
+
+func (c *Config) IsProduction() bool {
+	return c.AppEnv == "production"
 }
