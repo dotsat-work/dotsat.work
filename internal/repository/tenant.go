@@ -91,7 +91,7 @@ func (r *tenantRepository) Update(tenant *model.Tenant) error {
 		WHERE id = $6
 	`
 
-	_, err := r.db.Exec(
+	result, err := r.db.Exec(
 		query,
 		tenant.Name,
 		tenant.Subdomain,
@@ -100,7 +100,20 @@ func (r *tenantRepository) Update(tenant *model.Tenant) error {
 		tenant.UpdatedAt,
 		tenant.ID,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return ErrTenantNotFound
+	}
+
+	return nil
 }
 
 func (r *tenantRepository) Delete(id uuid.UUID) error {
