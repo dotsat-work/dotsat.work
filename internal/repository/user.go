@@ -101,7 +101,7 @@ func (r *userRepository) Update(user *model.User) error {
 		WHERE id = $7
 	`
 
-	_, err := r.db.Exec(
+	result, err := r.db.Exec(
 		query,
 		user.Email,
 		user.PasswordHash,
@@ -111,7 +111,20 @@ func (r *userRepository) Update(user *model.User) error {
 		user.UpdatedAt,
 		user.ID,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return ErrUserNotFound
+	}
+
+	return nil
 }
 
 func (r *userRepository) Delete(id uuid.UUID) error {
