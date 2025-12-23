@@ -110,7 +110,7 @@ func (r *tenantRepository) Delete(id uuid.UUID) error {
 }
 
 func (r *tenantRepository) List() ([]*model.Tenant, error) {
-	var tenants []*model.Tenant
+	tenants := make([]*model.Tenant, 0)
 	query := `SELECT * FROM tenants ORDER BY created_at DESC`
 
 	err := r.db.Select(&tenants, query)
