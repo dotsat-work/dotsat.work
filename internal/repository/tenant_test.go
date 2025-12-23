@@ -201,6 +201,33 @@ func TestTenantRepository_Update(t *testing.T) {
 	}
 }
 
+func TestTenantRepository_Update_NotFound(t *testing.T) {
+	db := setupTestDB(t)
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close database: %v", err)
+		}
+	}()
+
+	repo := NewTenantRepository(db)
+
+	// Try to update a tenant that doesn't exist
+	nonExistentTenant := &model.Tenant{
+		ID:        uuid.New(), // This ID doesn't exist in DB
+		Name:      "Non-Existent Corp",
+		Subdomain: "nonexistent",
+		Status:    "active",
+		Tier:      "standard",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	err := repo.Update(nonExistentTenant)
+	if err != ErrTenantNotFound {
+		t.Errorf("expected ErrTenantNotFound when updating non-existent tenant, got %v", err)
+	}
+}
+
 func TestTenantRepository_Delete(t *testing.T) {
 	db := setupTestDB(t)
 	defer func() {
