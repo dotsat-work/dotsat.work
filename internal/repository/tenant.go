@@ -65,7 +65,7 @@ func (r *tenantRepository) ByID(id uuid.UUID) (*model.Tenant, error) {
 	query := `SELECT * FROM tenants WHERE id = $1`
 
 	err := r.db.Get(tenant, query, id)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrTenantNotFound
 	}
 
@@ -77,7 +77,7 @@ func (r *tenantRepository) BySubdomain(subdomain string) (*model.Tenant, error) 
 	query := `SELECT * FROM tenants WHERE subdomain = $1`
 
 	err := r.db.Get(tenant, query, subdomain)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrTenantNotFound
 	}
 
@@ -105,8 +105,22 @@ func (r *tenantRepository) Update(tenant *model.Tenant) error {
 
 func (r *tenantRepository) Delete(id uuid.UUID) error {
 	query := `DELETE FROM tenants WHERE id = $1`
-	_, err := r.db.Exec(query, id)
-	return err
+
+	result, err := r.db.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return ErrTenantNotFound
+	}
+
+	return nil
 }
 
 func (r *tenantRepository) List() ([]*model.Tenant, error) {
