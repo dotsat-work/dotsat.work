@@ -8,16 +8,15 @@ import (
 
 	"dotsat.work/internal/config"
 	"dotsat.work/internal/db"
+	"dotsat.work/internal/repository"
+	"dotsat.work/internal/service"
 )
 
 type App struct {
-	Cfg *config.Config
-	DB  *sqlx.DB
-	// TODO: Add repositories and services as you build them
-	// TenantRepository *repository.TenantRepository
-	// UserRepository   *repository.UserRepository
-	// TenantService    *service.TenantService
-	// UserService      *service.UserService
+	Cfg           *config.Config
+	DB            *sqlx.DB
+	TenantService *service.TenantService
+	UserService   *service.UserService
 }
 
 func New(cfg *config.Config) (*App, error) {
@@ -30,25 +29,25 @@ func New(cfg *config.Config) (*App, error) {
 	// Run database migrations
 	err = db.RunMigrations(database.DB)
 	if err != nil {
-		database.Close() // Close DB on migration failure
+		if closeErr := database.Close(); closeErr != nil {
+			return nil, fmt.Errorf("failed to run migrations: %w (also failed to close DB: %v)", err, closeErr)
+		}
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
-	// TODO: Initialize repositories
-	// tenantRepository := repository.NewTenantRepository(database)
-	// userRepository := repository.NewUserRepository(database)
+	// Initialize repositories
+	tenantRepository := repository.NewTenantRepository(database)
+	userRepository := repository.NewUserRepository(database)
 
-	// TODO: Initialize services
-	// tenantService := service.NewTenantService(tenantRepository)
-	// userService := service.NewUserService(userRepository)
+	// Initialize services
+	tenantService := service.NewTenantService(tenantRepository)
+	userService := service.NewUserService(userRepository)
 
 	return &App{
-		Cfg: cfg,
-		DB:  database,
-		// TenantRepository: tenantRepository,
-		// UserRepository:   userRepository,
-		// TenantService:    tenantService,
-		// UserService:      userService,
+		Cfg:           cfg,
+		DB:            database,
+		TenantService: tenantService,
+		UserService:   userService,
 	}, nil
 }
 
