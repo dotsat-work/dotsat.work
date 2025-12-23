@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -223,7 +224,7 @@ func TestTenantRepository_Update_NotFound(t *testing.T) {
 	}
 
 	err := repo.Update(nonExistentTenant)
-	if err != ErrTenantNotFound {
+	if !errors.Is(err, ErrTenantNotFound) {
 		t.Errorf("expected ErrTenantNotFound when updating non-existent tenant, got %v", err)
 	}
 }
