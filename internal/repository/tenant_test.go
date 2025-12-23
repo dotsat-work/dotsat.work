@@ -107,7 +107,7 @@ func TestTenantRepository_Create_DuplicateSubdomain(t *testing.T) {
 	}
 
 	err = repo.Create(tenant2)
-	if err != ErrDuplicateSubdomain {
+	if !errors.Is(err, ErrDuplicateSubdomain) {
 		t.Errorf("expected ErrDuplicateSubdomain, got %v", err)
 	}
 }
@@ -272,7 +272,7 @@ func TestTenantRepository_Delete(t *testing.T) {
 
 	// Verify it's gone
 	_, err = repo.ByID(tenant.ID)
-	if err != ErrTenantNotFound {
+	if !errors.Is(err, ErrTenantNotFound) {
 		t.Errorf("expected ErrTenantNotFound after delete, got %v", err)
 	}
 }
