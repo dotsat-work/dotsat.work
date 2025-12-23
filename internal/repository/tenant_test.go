@@ -200,3 +200,169 @@ func TestTenantRepository_Update(t *testing.T) {
 		t.Errorf("expected tier %q, got %q", "premium", found.Tier)
 	}
 }
+
+func TestTenantRepository_Delete(t *testing.T) {
+	db := setupTestDB(t)
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close database: %v", err)
+		}
+	}()
+
+	repo := NewTenantRepository(db)
+
+	tenant := &model.Tenant{
+		ID:        uuid.New(),
+		Name:      "Test Company",
+		Subdomain: "testco",
+		Status:    "active",
+		Tier:      "standard",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	// Create tenant first
+	err := repo.Create(tenant)
+	if err != nil {
+		t.Fatalf("failed to create tenant: %v", err)
+	}
+
+	// Verify it exists
+	found, err := repo.ByID(tenant.ID)
+	if err != nil {
+		t.Fatalf("failed to find tenant before delete: %v", err)
+	}
+	if found.ID != tenant.ID {
+		t.Errorf("expected ID %v, got %v", tenant.ID, found.ID)
+	}
+
+	// Delete the tenant
+	err = repo.Delete(tenant.ID)
+	if err != nil {
+		t.Fatalf("failed to delete tenant: %v", err)
+	}
+
+	// Verify it's gone
+	_, err = repo.ByID(tenant.ID)
+	if err != ErrTenantNotFound {
+		t.Errorf("expected ErrTenantNotFound after delete, got %v", err)
+	}
+}
+
+func TestTenantRepository_List(t *testing.T) {
+	db := setupTestDB(t)
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close database: %v", err)
+		}
+	}()
+
+	repo := NewTenantRepository(db)
+
+	// Create multiple tenants
+	tenants := []*model.Tenant{
+		{
+			ID:        uuid.New(),
+			Name:      "Company A",
+			Subdomain: "company-a",
+			Status:    "active",
+			Tier:      "premium",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+		{
+			ID:        uuid.New(),
+			Name:      "Company B",
+			Subdomain: "company-b",
+			Status:    "active",
+			Tier:      "standard",
+			CreatedAt: time.Now().Add(1 * time.Second),
+			UpdatedAt: time.Now().Add(1 * time.Second),
+		},
+		{
+			ID:        uuid.New(),
+			Name:      "Company C",
+			Subdomain: "company-c",
+			Status:    "trial",
+			Tier:      "standard",
+			CreatedAt: time.Now().Add(2 * time.Second),
+			UpdatedAt: time.Now().Add(2 * time.Second),
+		},
+	}
+
+	for _, tenant := range tenants {
+		err := repo.Create(tenant)
+		if err != nil {
+			t.Fatalf("failed to create tenant %s: %v", tenant.Name, err)
+		}
+	}
+
+	// List all tenants
+	list, err := repo.List()
+	if err != nil {
+		t.Fatalf("failed to list tenants: %v", err)
+	}
+
+	// Verify we got at least the 3 we created
+	if len(list) < 3 {
+		t.Errorf("expected at least 3 tenants, got %d", len(list))
+	}
+
+	// Verify the tenants are ordered by created_at DESC (newest first)
+	// The last created tenant (Company C) should be first in the list
+	foundCompanyC := false
+	for _, tenant := range list {
+		if tenant.Subdomain == "company-c" {
+			foundCompanyC = true
+			break
+		}
+	}
+
+	if !foundCompanyC {
+		t.Error("expected to find Company C in the list")
+	}
+
+	// Verify all our created tenants are in the list
+	expectedSubdomains := map[string]bool{
+		"company-a": false,
+		"company-b": false,
+		"company-c": false,
+	}
+
+	for _, tenant := range list {
+		if _, exists := expectedSubdomains[tenant.Subdomain]; exists {
+			expectedSubdomains[tenant.Subdomain] = true
+		}
+	}
+
+	for subdomain, found := range expectedSubdomains {
+		if !found {
+			t.Errorf("expected to find tenant with subdomain %q in list", subdomain)
+		}
+	}
+}
+
+func TestTenantRepository_List_Empty(t *testing.T) {
+	db := setupTestDB(t)
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close database: %v", err)
+		}
+	}()
+
+	repo := NewTenantRepository(db)
+
+	// List should return empty slice, not error
+	list, err := repo.List()
+	if err != nil {
+		t.Fatalf("failed to list tenants: %v", err)
+	}
+
+	if list == nil {
+		t.Error("expected empty slice, got nil")
+	}
+
+	if len(list) != 0 {
+		t.Errorf("expected empty list, got %d tenants", len(list))
+	}
+}
