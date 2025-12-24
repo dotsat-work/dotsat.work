@@ -17,6 +17,7 @@ type App struct {
 	DB            *sqlx.DB
 	TenantService *service.TenantService
 	UserService   *service.UserService
+	AuthService   *service.AuthService
 }
 
 func New(cfg *config.Config) (*App, error) {
@@ -38,16 +39,25 @@ func New(cfg *config.Config) (*App, error) {
 	// Initialize repositories
 	tenantRepository := repository.NewTenantRepository(database)
 	userRepository := repository.NewUserRepository(database)
+	tokenRepository := repository.NewTokenRepository(database)
 
 	// Initialize services
 	tenantService := service.NewTenantService(tenantRepository)
 	userService := service.NewUserService(userRepository)
+	authService := service.NewAuthService(
+		userRepository,
+		tokenRepository,
+		cfg.JWTSecret,
+		cfg.IsProduction(),
+		cfg.JWTExpiry,
+	)
 
 	return &App{
 		Cfg:           cfg,
 		DB:            database,
 		TenantService: tenantService,
 		UserService:   userService,
+		AuthService:   authService,
 	}, nil
 }
 
