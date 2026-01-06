@@ -12,6 +12,7 @@ type contextKey string
 
 const (
 	UserKey      contextKey = "user"
+	ProfileKey   contextKey = "profile"
 	TenantKey    contextKey = "tenant"
 	ConfigKey    contextKey = "config"
 	CSRFTokenKey contextKey = "csrf_token"
@@ -26,6 +27,17 @@ func User(ctx context.Context) *model.User {
 // WithUser adds a user to the context
 func WithUser(ctx context.Context, user *model.User) context.Context {
 	return context.WithValue(ctx, UserKey, user)
+}
+
+// Profile retrieves the profile from context
+func Profile(ctx context.Context) *model.Profile {
+	profile, _ := ctx.Value(ProfileKey).(*model.Profile)
+	return profile
+}
+
+// WithProfile adds a profile to the context
+func WithProfile(ctx context.Context, profile *model.Profile) context.Context {
+	return context.WithValue(ctx, ProfileKey, profile)
 }
 
 // Tenant retrieves the tenant from context
