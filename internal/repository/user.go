@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	ErrUserNotFound   = errors.New("user not found")
-	ErrDuplicateEmail = errors.New("email already exists in this tenant")
+	ErrUserNotFound    = errors.New("user not found")
+	ErrDuplicateEmail  = errors.New("email already exists in this tenant")
+	ErrProfileNotFound = errors.New("profile not found")
 )
 
 type UserRepository interface {
