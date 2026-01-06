@@ -13,11 +13,12 @@ import (
 )
 
 type App struct {
-	Cfg           *config.Config
-	DB            *sqlx.DB
-	TenantService *service.TenantService
-	UserService   *service.UserService
-	AuthService   *service.AuthService
+	Cfg            *config.Config
+	DB             *sqlx.DB
+	TenantService  *service.TenantService
+	UserService    *service.UserService
+	ProfileService *service.ProfileService
+	AuthService    *service.AuthService
 }
 
 func New(cfg *config.Config) (*App, error) {
@@ -39,11 +40,13 @@ func New(cfg *config.Config) (*App, error) {
 	// Initialize repositories
 	tenantRepository := repository.NewTenantRepository(database)
 	userRepository := repository.NewUserRepository(database)
+	profileRepository := repository.NewProfileRepository(database)
 	tokenRepository := repository.NewTokenRepository(database)
 
 	// Initialize services
 	tenantService := service.NewTenantService(tenantRepository)
 	userService := service.NewUserService(userRepository)
+	profileService := service.NewProfileService(profileRepository)
 	authService := service.NewAuthService(
 		userRepository,
 		tokenRepository,
@@ -53,11 +56,12 @@ func New(cfg *config.Config) (*App, error) {
 	)
 
 	return &App{
-		Cfg:           cfg,
-		DB:            database,
-		TenantService: tenantService,
-		UserService:   userService,
-		AuthService:   authService,
+		Cfg:            cfg,
+		DB:             database,
+		TenantService:  tenantService,
+		UserService:    userService,
+		ProfileService: profileService,
+		AuthService:    authService,
 	}, nil
 }
 
