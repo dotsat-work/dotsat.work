@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// AuthMiddleware checks for JWT token and adds user + tenant to context if valid
-func AuthMiddleware(authService *service.AuthService, userService *service.UserService, tenantService *service.TenantService) func(http.Handler) http.Handler {
+// AuthMiddleware checks for JWT token and adds user + profile + tenant to context if valid
+func AuthMiddleware(authService *service.AuthService, userService *service.UserService, profileService *service.ProfileService, tenantService *service.TenantService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Get JWT from a cookie
@@ -55,6 +55,15 @@ func AuthMiddleware(authService *service.AuthService, userService *service.UserS
 			// Security: Remove password hash from context
 			user.PasswordHash = nil
 
+			// Fetch profile
+			profile, err := profileService.ByUserID(userID)
+			if err != nil {
+				// Profile not found - this shouldn't happen but handle gracefully
+				authService.ClearJWTCookie(w)
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			// Fetch tenant
 			tenant, err := tenantService.ByID(user.TenantID)
 			if err != nil {
@@ -63,8 +72,9 @@ func AuthMiddleware(authService *service.AuthService, userService *service.UserS
 				return
 			}
 
-			// Add user + tenant to context
+			// Add user + profile + tenant to context
 			ctx := ctxkeys.WithUser(r.Context(), user)
+			ctx = ctxkeys.WithProfile(ctx, profile)
 			ctx = ctxkeys.WithTenant(ctx, tenant)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
