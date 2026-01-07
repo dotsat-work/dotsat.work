@@ -70,7 +70,7 @@ func (s *UserService) Create(tenantID uuid.UUID, email, password, role string) (
 	err := s.userRepository.Create(user)
 	if err != nil {
 		if errors.Is(err, repository.ErrDuplicateEmail) {
-			return nil, fmt.Errorf("email %q is already registered in this organization", email)
+			return nil, fmt.Errorf("email %q is already registered", email)
 		}
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
@@ -112,7 +112,7 @@ func (s *UserService) Update(user *model.User) error {
 	err := s.userRepository.Update(user)
 	if err != nil {
 		if errors.Is(err, repository.ErrDuplicateEmail) {
-			return fmt.Errorf("email %q is already registered in this organization", user.Email)
+			return fmt.Errorf("email %q is already registered", user.Email)
 		}
 		return fmt.Errorf("failed to update user: %w", err)
 	}

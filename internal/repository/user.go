@@ -13,7 +13,7 @@ import (
 
 var (
 	ErrUserNotFound    = errors.New("user not found")
-	ErrDuplicateEmail  = errors.New("email already exists in this tenant")
+	ErrDuplicateEmail  = errors.New("email already exists")
 	ErrProfileNotFound = errors.New("profile not found")
 )
 
