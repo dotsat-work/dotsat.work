@@ -92,3 +92,6 @@ server
 
 ### Task
 .task
+
+### Templ
+*_templ.go
