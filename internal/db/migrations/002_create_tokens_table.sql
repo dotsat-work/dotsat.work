@@ -1,3 +1,4 @@
+-- +goose Up
 -- ============================================================================
 -- TOKENS TABLE
 -- For email verification, password reset, magic links, email change
@@ -22,3 +23,5 @@ CREATE INDEX IF NOT EXISTS idx_tokens_user_id ON tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_tokens_expires_at ON tokens(expires_at);
 CREATE INDEX IF NOT EXISTS idx_tokens_used_at ON tokens(used_at);
 
+-- +goose Down
+DROP TABLE IF EXISTS tokens;
